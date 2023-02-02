@@ -18,10 +18,10 @@ contract RamenSwapFactory {
         if(Erc20ToExchange[token] != address(0)){
             return Erc20ToExchange[token];
         }else {
-            address RamenSwapExchange = address(new RamenSwapExchange());
-            Erc20ToExchange[token] = RamenSwapExchange;
-            ExchangeToErc20[RamenSwapExchange] = token;
-            return RamenSwapExchange;
+            address ramenSwapExchange = address(new RamenSwapExchange(token));
+            Erc20ToExchange[token] = ramenSwapExchange;
+            ExchangeToErc20[ramenSwapExchange] = token;
+            return ramenSwapExchange;
         }
     }
 
