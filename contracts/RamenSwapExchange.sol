@@ -29,7 +29,8 @@ contract RamenSwapExchange {
     ///@return amount of tokens to be received 
     function getEthToTokenInputPrice(uint ethSold) view external returns(uint256){
         require(ethSold != 0, "ethSold should be greater than zero");
-        return (ethSold * TokenAmount)/(1 * EthAmount + ethSold);
+        //@TODO check if deltaY = Y - (k/[X + deltaX]) is more efficient
+        return (ethSold * TokenAmount)/(EthAmount + ethSold);
     }
      //@TODO implement fees
     ///@dev function computes how much eth user has to deposit to get tokenBought amount of tokens
@@ -38,6 +39,6 @@ contract RamenSwapExchange {
     function getEthToTokenOutputPrice(uint tokenBought) view external returns(uint256){
         require(tokenBought != 0, "tokenBought should be greater than zero");
         require(tokenBought < TokenAmount, "tokenBought should be less than TokenAmount");
-        return ((EthAmount * tokenBought)/TokenAmount - tokenBought);//@TODO Check why there is +1 at the end in the formalized specification
+        return ((EthAmount * tokenBought)/(TokenAmount - tokenBought));//@TODO Check why there is +1 at the end in the formalized specification
     }
 }
