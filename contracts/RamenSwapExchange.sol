@@ -4,13 +4,17 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract RamenSwapExchange {
     IERC20 public token;
-    uint EthAmount;
-    uint TokenAmount;
-    uint totalLiquidity;//@TODO create ramen tokens 
+    uint public EthAmount;
+    uint public TokenAmount;
+    uint public EthXToken;
+    uint public totalLiquidity;//@TODO create ramen tokens 
 
     //@TODO change to Proxy pattern
-    constructor(address _token) {
+    constructor(address _token, uint _EthAmount, uint _TokenAmount) {
         token = IERC20(_token);
+        EthAmount = _EthAmount;
+        TokenAmount = _TokenAmount;
+        EthXToken = EthAmount * TokenAmount;
     }
 
     function addLiquidity(uint minLiquidity, uint maxTokens, uint deadline) external payable {}

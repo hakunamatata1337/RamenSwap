@@ -13,12 +13,12 @@ contract RamenSwapFactory {
     ///@param token address of token that user wants to deploy exchange for
     ///@return returns address of the exchange assigned to the token
     ///@notice if token already has exchange assigned to it function returns assigned exchange
-    function deployExchange(address token) external returns (address) {
+    function deployExchange(address token, uint ethAmount, uint tokenAmount) external returns (address) {
         require(token != address(0), "token cannot be address zero");
         if(Erc20ToExchange[token] != address(0)){
             return Erc20ToExchange[token];
         }else {
-            address ramenSwapExchange = address(new RamenSwapExchange(token));
+            address ramenSwapExchange = address(new RamenSwapExchange(token, ethAmount, tokenAmount));
             Erc20ToExchange[token] = ramenSwapExchange;
             ExchangeToErc20[ramenSwapExchange] = token;
             return ramenSwapExchange;
