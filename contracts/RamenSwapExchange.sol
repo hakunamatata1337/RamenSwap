@@ -1,13 +1,18 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IRamenSwapFactory.sol";
 
 contract RamenSwapExchange {
+    IRamenSwapFactory public immutable factory;
     IERC20 public token;
     uint public EthAmount;
     uint public TokenAmount;
     uint public EthXToken;
     uint public totalLiquidity;//@TODO create ramen tokens 
+    uint public totalSupply;
+
+    // mapping(address => ) public balanceOf;
 
     //@TODO change to Proxy pattern
     constructor(address _token, uint _EthAmount, uint _TokenAmount) {
@@ -15,9 +20,22 @@ contract RamenSwapExchange {
         EthAmount = _EthAmount;
         TokenAmount = _TokenAmount;
         EthXToken = EthAmount * TokenAmount;
+        factory = IRamenSwapFactory(msg.sender);
     }
 
-    function addLiquidity(uint minLiquidity, uint maxTokens, uint deadline) external payable {}
+    function addLiquidity(uint minLiquidity, uint maxTokens, uint deadline) external payable returns(uint256) {
+            if(totalLiquidity > 0) {
+
+            }else {
+                require(deadline > block.timestamp, "block timestamp is after deadline");
+                require(msg.value >= 1 gwei);
+                require(factory.getExchange(address(token)) == address(this));
+                uint tokenAmount = maxTokens;  
+                uint initialLiquidity = address(this).balance;
+                totalSupply = totalSupply + initialLiquidity;
+            }
+            
+    }
     function removeLiquidity(uint amount,uint min_eth,uint min_tokens,uint deadline) external {}
 
     function tradeEthForErc20() external {}
