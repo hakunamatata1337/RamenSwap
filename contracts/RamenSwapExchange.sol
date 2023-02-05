@@ -24,6 +24,7 @@ contract RamenSwapExchange {
     function tradeErc20ForEth() external {}
 
     //@TODO implement fees
+    //@TODO check if it reverts if ethSold is so great that tokensBought exceedes tokenAmount
     ///@dev function computes how much tokens can be bought by selling ethSold amount of ether
     ///@param ethSold amount of ether to be sold
     ///@return amount of tokens to be received 
@@ -41,4 +42,16 @@ contract RamenSwapExchange {
         require(tokenBought < TokenAmount, "tokenBought should be less than TokenAmount");
         return ((EthAmount * tokenBought)/(TokenAmount - tokenBought));//@TODO Check why there is +1 at the end in the formalized specification
     }
+
+     function getTokenToEthInputPrice(uint tokenSold) view external returns(uint256){
+        require(tokenSold != 0, "tokenSold should be greater than zero");
+        return (tokenSold * EthAmount)/(TokenAmount + tokenSold);
+    }
+
+     function getTokenToEthOutputPrice(uint ethBought) view external returns(uint256){
+        require(ethBought != 0, "ethBought should be greater than zero");
+        require(ethBought < EthAmount, "ethBought should be less than EthAmount");
+        return ((TokenAmount * ethBought)/(EthAmount - ethBought));//@TODO Check why there is +1 at the end in the formalized specification
+    }
+
 }
