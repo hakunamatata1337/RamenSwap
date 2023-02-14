@@ -11,3 +11,9 @@ REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
+
+RamenSwapFactory
+0x670217413Bb72cC2605f05895d064E87157b8cFE
+
+TestERC20
+0x2C76adB0AE170f832011D25797993b45eAdCEbE2

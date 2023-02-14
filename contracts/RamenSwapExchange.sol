@@ -71,21 +71,33 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return (ethAmount , tokenAmount);
     }
 
-    function tradeEthForErc20() external {}
-    function tradeErc20ForEth() external {}
+    
+
+    function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256) {
+        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        uint256 tokensToBeReceived = _getInputPrice(msg.value, address(this).balance - msg.value, token.balanceOf(address(this)));
+        // require(tokensToBeReceived >= )
+        //token.transferFrom();
+        
+    } 
 
     //@TODO implement fees
     //@TODO check if it reverts if ethSold is so great that tokensBought exceedes tokenAmount
     ///@dev function computes how much tokens can be bought by selling ethSold amount of ether
     ///@param ethSold amount of ether to be sold
     ///@return amount of tokens to be received 
-    function getEthToTokenInputPrice(uint ethSold) view external returns(uint256){
+    function getEthToTokenInputPrice(uint ethSold) view public returns(uint256){
         require(ethSold != 0, "ethSold should be greater than zero");
         //@TODO check if deltaY = Y - (k/[X + deltaX]) is more efficient
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
-        return (ethSold * tokenAmount)/(ethAmount + ethSold);
+        return _getInputPrice(ethSold, ethAmount, tokenAmount);
     }
+
+     function _getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) internal pure returns(uint256) {
+        return ((inputAmount * outputReserve)/(inputReserve + inputAmount));
+    }
+
      //@TODO implement fees
     ///@dev function computes how much eth user has to deposit to get tokenBought amount of tokens
     ///@param tokenBought amount of tokens to be bought
@@ -112,5 +124,7 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         require(ethBought < ethAmount, "ethBought should be less than EthAmount");
         return ((tokenAmount * ethBought)/(ethAmount - ethBought) + 1);
     }
+
+   
 
 }
