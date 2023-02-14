@@ -73,7 +73,7 @@ describe("RamenSwapExchange", async () => {
         "RamenSwap: msg value should be greater than zero"
       );
     });
-    it("Should revert if msg value is equal to zero", async () => {
+    it("Should revert if max tokens is equal to zero", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
       const minLiquidity = BigNumber.from("1");
@@ -101,13 +101,13 @@ describe("RamenSwapExchange", async () => {
         const deadline = currentTimestamp + 100;
         const minLiquidity = BigNumber.from("0");
         const maxTokens = BigNumber.from("1");
-        const msgValue = BigNumber.from("1");
+        const invalidMsgValue = BigNumber.from("1");
 
         const tx = RamenSwapExchange.addLiquidity(
           minLiquidity,
           maxTokens,
           deadline,
-          { value: msgValue }
+          { value: invalidMsgValue }
         );
 
         await expect(tx).to.be.revertedWith(
@@ -184,12 +184,12 @@ describe("RamenSwapExchange", async () => {
       it("Should revert if min liquidity is equal to zero", async () => {
         const currentTimestamp = await latestBlockTimestamp();
         const deadline = currentTimestamp + 100;
-        const minLiquidity = BigNumber.from("0");
+        const invalidMinLiquidity = BigNumber.from("0");
         const maxTokens = await token.balanceOf(userA.address);
         const msgValue = ethers.utils.parseEther("1");
 
         const tx = RamenSwapExchange.addLiquidity(
-          minLiquidity,
+          invalidMinLiquidity,
           maxTokens,
           deadline,
           {
@@ -202,7 +202,47 @@ describe("RamenSwapExchange", async () => {
         );
       });
 
-      it("Should revert if maxTokens is less than required token amount", async () => {});
+      it("Should revert if maxTokens is less than required token amount", async () => {
+        const currentTimestamp = await latestBlockTimestamp();
+        const deadline = currentTimestamp + 100;
+        const minLiquidity = ethers.utils.parseEther("1");
+        const invalidMaxTokens = ethers.utils.parseEther("0.1");
+        const msgValue = ethers.utils.parseEther("1");
+
+        const tx = RamenSwapExchange.addLiquidity(
+          minLiquidity,
+          invalidMaxTokens,
+          deadline,
+          {
+            value: msgValue,
+          }
+        );
+
+        await expect(tx).to.be.revertedWith(
+          "maxTokens is less than required tokenAmount"
+        );
+      });
+
+      it("Should revert if liquidity minted is less than minLiquidity", async () => {
+        const currentTimestamp = await latestBlockTimestamp();
+        const deadline = currentTimestamp + 100;
+        const invalidMinLiquidity = ethers.utils.parseEther("2");
+        const maxTokens = ethers.utils.parseEther("1").add("1");
+        const msgValue = ethers.utils.parseEther("1");
+
+        const tx = RamenSwapExchange.addLiquidity(
+          invalidMinLiquidity,
+          maxTokens,
+          deadline,
+          {
+            value: msgValue,
+          }
+        );
+
+        await expect(tx).to.be.revertedWith(
+          "liquidity minted is less than minLiquidity"
+        );
+      });
     });
   });
 

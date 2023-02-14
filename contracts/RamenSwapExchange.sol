@@ -21,6 +21,10 @@ contract RamenSwapExchange is ERC20{
         factory = IRamenSwapFactory(msg.sender);
     }
     
+    ///@dev function used to add liquidity to the pool
+    ///@param minLiquidity minimal amount of liquidity tokens that wants to receiver
+    ///@param maxTokens max amount of tokens that user is willing to deposit to the pool
+    ///@param deadline time after which transaction is invalid 
     function addLiquidity(uint minLiquidity, uint maxTokens, uint deadline) external payable returns(uint256) {
             require(deadline > block.timestamp, "RamenSwap: Its after deadline");
             require( msg.value > 0 , "RamenSwap: msg value should be greater than zero");
