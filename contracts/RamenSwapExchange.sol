@@ -1,14 +1,17 @@
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IRamenSwapFactory.sol";
 
-//@TODO use SAFEERC20
-contract RamenSwapExchange is ERC20{
-    
+contract RamenSwapExchange is ERC20, ERC20Burnable{
+    using SafeERC20 for ERC20;
+
     IRamenSwapFactory public immutable factory;
-    IERC20 public token;
+    ERC20 public immutable token;
+    
 
     event TokenPurchase(address indexed buyer, uint256 indexed eth_sold, uint256 indexed tokens_bought);
     event EthPurchase(address indexed buyer, uint256 indexed tokens_sold, uint256 indexed eth_bought);
@@ -17,7 +20,7 @@ contract RamenSwapExchange is ERC20{
 
     //@TODO change to Proxy pattern
     constructor(address _token) ERC20("RamenToken","RAMEN"){
-        token = IERC20(_token);
+        token = ERC20(_token);
         factory = IRamenSwapFactory(msg.sender);
     }
     
@@ -38,7 +41,7 @@ contract RamenSwapExchange is ERC20{
                 uint liquidityMinted = msg.value * totalLiquidity / ethReserve;
                 require(maxTokens >= tokenAmount,"maxTokens is less than required tokenAmount"); 
                 require(liquidityMinted >= minLiquidity, "liquidity minted is less than minLiquidity");
-                require(token.transferFrom(msg.sender, address(this), tokenAmount), "Token transfer did not succed");
+                token.safeTransferFrom(msg.sender, address(this), tokenAmount);
                 emit AddLiquidity(msg.sender, msg.value, tokenAmount);
                 _mint(msg.sender, liquidityMinted);
                 return liquidityMinted;
@@ -46,13 +49,27 @@ contract RamenSwapExchange is ERC20{
                 require(msg.value >= 1 gwei, "RamenSwap: msg value should be at least one gwei");
                 require(factory.getExchange(address(token)) == address(this));
                 uint initialLiquidity = address(this).balance;
-                require(token.transferFrom(msg.sender, address(this), maxTokens), "ERC20 : Token transfer failed");
+                token.safeTransferFrom(msg.sender, address(this), maxTokens);
                 _mint(msg.sender, initialLiquidity);
                 emit AddLiquidity(msg.sender, msg.value, maxTokens);
                 return initialLiquidity;
             }
     }
-    function removeLiquidity(uint amount,uint min_eth,uint min_tokens,uint deadline) external {}
+    function removeLiquidity(uint amount,uint min_eth,uint min_tokens,uint deadline) external returns (uint256, uint256) {
+        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        require(amount > 0, "RamenSwap: amount must be greater than zero");
+        require(min_eth > 0 && min_tokens > 0, "min_eth and min_token should be greater than zero");
+        uint totalLiquidity = totalSupply();
+        require(totalLiquidity > 0, "RamenSwap: totalLiquidity");
+        uint ethAmount = amount * address(this).balance / totalLiquidity;
+        uint tokenAmount = amount * token.balanceOf(address(this)) / totalLiquidity;
+        require(min_eth <= ethAmount && min_tokens <= tokenAmount, "not enough tokens or eth withdrawn");
+        burn(amount);
+        token.safeTransferFrom(address(this), msg.sender, tokenAmount);
+        payable(msg.sender).transfer(ethAmount);
+        emit RemoveLiquidity(msg.sender, ethAmount, tokenAmount);
+        return (ethAmount , tokenAmount);
+    }
 
     function tradeEthForErc20() external {}
     function tradeErc20ForEth() external {}
