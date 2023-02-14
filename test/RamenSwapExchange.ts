@@ -178,7 +178,7 @@ describe("RamenSwapExchange", async () => {
         );
 
         //mint 10 ^ 18 tokens
-        await token.connect(userA).mint(BigNumber.from("1000000000000000000"));
+        await token.connect(userA).mint(ethers.utils.parseEther("10"));
       });
 
       it("Should revert if min liquidity is equal to zero", async () => {
@@ -242,6 +242,36 @@ describe("RamenSwapExchange", async () => {
         await expect(tx).to.be.revertedWith(
           "liquidity minted is less than minLiquidity"
         );
+      });
+
+      it("Should revert if token transfer fails", async () => {
+        //@TODO
+      });
+      it("Should mint liquidity", async () => {
+        const currentTimestamp = await latestBlockTimestamp();
+        const deadline = currentTimestamp + 100;
+        const minLiquidity = ethers.utils.parseEther("1");
+        const maxTokens = ethers.utils.parseEther("1").add("1");
+        const msgValue = ethers.utils.parseEther("1");
+
+        await token
+          .connect(userA)
+          .approve(RamenSwapExchange.address, maxTokens);
+
+        const tx = RamenSwapExchange.addLiquidity(
+          minLiquidity,
+          maxTokens,
+          deadline,
+          {
+            value: msgValue,
+          }
+        );
+
+        await expect(tx)
+          .emit(RamenSwapExchange, "Transfer")
+          .withArgs(ethers.constants.AddressZero, userA.address, minLiquidity)
+          .emit(RamenSwapExchange, "AddLiquidity")
+          .withArgs(userA.address, msgValue, maxTokens);
       });
     });
   });
