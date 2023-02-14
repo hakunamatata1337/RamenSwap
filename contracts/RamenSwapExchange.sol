@@ -75,11 +75,25 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
 
     function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+         require(msg.value != 0, "msg value must be greater than zero");
         uint256 tokensToBeReceived = _getInputPrice(msg.value, address(this).balance - msg.value, token.balanceOf(address(this)));
-        // require(tokensToBeReceived >= )
-        //token.transferFrom();
-        
+        require(tokensToBeReceived >= min_tokens, "tokens to be received is less than min_tokens");
+        token.safeTransfer( msg.sender, tokensToBeReceived);
+        emit TokenPurchase(msg.sender, msg.value, tokensToBeReceived);
+        return tokensToBeReceived;
     } 
+
+    function tokenToEthSwapInput(uint256 tokenSold, uint256 min_eth, uint256 deadline) external  returns (uint256) {
+        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        require(tokenSold != 0, "tokenSold must be greater than zero");
+        uint ethToBeReceived = _getInputPrice(tokenSold, token.balanceOf(address(this)), address(this).balance);
+        require(ethToBeReceived >= min_eth, "eth to be received is less than min_eth");
+        token.safeTransferFrom(msg.sender, address(this), tokenSold);
+        payable(msg.sender).transfer(ethToBeReceived);
+        emit EthPurchase(msg.sender, tokenSold, ethToBeReceived);
+        return ethToBeReceived;
+    } 
+
 
     //@TODO implement fees
     //@TODO check if it reverts if ethSold is so great that tokensBought exceedes tokenAmount
@@ -114,7 +128,7 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
         require(tokenSold != 0, "tokenSold should be greater than zero");
-        return (tokenSold * ethAmount)/(tokenAmount + tokenSold);
+        return _getInputPrice(tokenSold, tokenAmount, ethAmount);
     }
 
      function getTokenToEthOutputPrice(uint ethBought) view external returns(uint256){
