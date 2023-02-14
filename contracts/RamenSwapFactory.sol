@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 import "./RamenSwapExchange.sol";
 
 contract RamenSwapFactory {
+    uint totalId = 0;
 
     mapping (address => address) Erc20ToExchange;
     mapping (address => address) ExchangeToErc20;
