@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IRamenSwapFactory.sol";
+import "hardhat/console.sol";
 
 contract RamenSwapExchange is ERC20, ERC20Burnable{
     using SafeERC20 for ERC20;
@@ -80,8 +81,24 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         require(tokensToBeReceived >= min_tokens, "tokens to be received is less than min_tokens");
         token.safeTransfer( msg.sender, tokensToBeReceived);
         emit TokenPurchase(msg.sender, msg.value, tokensToBeReceived);
+        console.log(msg.value, tokensToBeReceived);
         return tokensToBeReceived;
     } 
+
+    function ethToTokenSwapOutput(uint tokensBought, uint deadline) external payable returns (uint256) {
+        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        uint tokenAmount = token.balanceOf(address(this));
+        uint ethAmount = address(this).balance;
+        uint ethToProvide = _getOutputPrice(tokensBought, tokenAmount, ethAmount - msg.value);
+        require(ethToProvide >= msg.value , "user did not provide enough eth");
+        uint refund = ethToProvide - msg.value;
+        if(refund > 0) {
+            payable(msg.sender).transfer(refund);
+        }
+        token.safeTransferFrom(address(this), msg.sender, tokensBought);
+        emit TokenPurchase(msg.sender, ethToProvide, tokensBought);
+        return ethToProvide;
+    }
 
     function tokenToEthSwapInput(uint256 tokenSold, uint256 min_eth, uint256 deadline) external  returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
@@ -108,10 +125,11 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return _getInputPrice(ethSold, ethAmount, tokenAmount);
     }
 
-     function _getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) internal pure returns(uint256) {
+     function _getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) private pure returns(uint256) {
+        require(inputReserve > 0 && outputReserve > 0);
         return ((inputAmount * outputReserve)/(inputReserve + inputAmount));
     }
-
+ 
      //@TODO implement fees
     ///@dev function computes how much eth user has to deposit to get tokenBought amount of tokens
     ///@param tokenBought amount of tokens to be bought
@@ -121,8 +139,14 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         uint ethAmount = address(this).balance;
         require(tokenBought != 0, "tokenBought should be greater than zero");
         require(tokenBought < tokenAmount, "tokenBought should be less than TokenAmount");
-        return ((ethAmount * tokenBought)/(tokenAmount - tokenBought) + 1);
+        return _getOutputPrice(tokenBought, tokenAmount,ethAmount);
     }
+
+    function _getOutputPrice(uint outputAmount, uint outputReserve, uint inputReserve) private pure returns (uint256) {
+        require(inputReserve > 0 && outputReserve > 0);
+        return ((inputReserve * outputAmount)/(outputReserve - outputAmount)+1);
+    }
+
 
      function getTokenToEthInputPrice(uint tokenSold) view external returns(uint256){
         uint tokenAmount = token.balanceOf(address(this));
@@ -136,7 +160,7 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         uint ethAmount = address(this).balance;
         require(ethBought != 0, "ethBought should be greater than zero");
         require(ethBought < ethAmount, "ethBought should be less than EthAmount");
-        return ((tokenAmount * ethBought)/(ethAmount - ethBought) + 1);
+        return _getOutputPrice(ethBought, ethAmount,tokenAmount);
     }
 
    

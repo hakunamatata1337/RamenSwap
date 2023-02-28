@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-abi-exporter";
 import * as dotenv from "dotenv";
 
 const fallbackKey =
@@ -16,6 +17,11 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY || fallbackKey],
     },
   },
+  abiExporter: {
+    clear: true,
+    runOnCompile: true,
+  },
+
 };
 
 export default config;

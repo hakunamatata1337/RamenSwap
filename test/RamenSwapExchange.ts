@@ -500,12 +500,21 @@ describe("RamenSwapExchange", async () => {
       const deadline = currentTimestamp + 100;
       const minTokens = BigNumber.from("40000000");
       const msgValue = BigNumber.from("4000000000");
+      
+      const userEthBalanceBeforeSwap = await ethers.provider.getBalance(userA.address);
+      const userTokenBalanceBeforeSwap = await token.balanceOf(userA.address);
 
       const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(minTokens, deadline, {value:msgValue});
 
       await expect(tx)
         .emit(RamenSwapExchange, "TokenPurchase")
         .withArgs(userA.address, msgValue, minTokens)
+
+      const userEthBalanceAfterSwap = await ethers.provider.getBalance(userA.address);  
+      const userTokenBalanceAfterSwap = await token.balanceOf(userA.address);
+    
+      expect(userEthBalanceAfterSwap.sub(userEthBalanceBeforeSwap.div(msgValue))).to.be.greaterThan(BigNumber.from("4000000000"));
+      expect(userTokenBalanceAfterSwap).to.be.eql(userTokenBalanceBeforeSwap.add(minTokens));
     })
   })
   describe("tokenToEthSwapInput", async ()=> {

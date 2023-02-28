@@ -4,12 +4,12 @@
     "deploy:deployRamenSwapFactory": "hardhat run ./scripts/deployRamenSwapFactory.ts",
     "deploy:deployTestERC20": "hardhat run ./scripts/deployTestERC20.ts"
   },
-
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@typechain/ethers-v5": "^10.2.0",
     "@typechain/hardhat": "^6.1.5",
     "hardhat": "^2.12.6",
+    "hardhat-abi-exporter": "^2.10.1",
     "typechain": "^8.1.1"
   },
   "dependencies": {
