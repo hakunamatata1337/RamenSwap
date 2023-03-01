@@ -402,7 +402,7 @@ describe("RamenSwapExchange", async () => {
       expect(ethReceived).to.be.eql(expectedEthReceived);
     });
   });
- 
+
   describe("getTokenToEthOutputPrice", () => {
     beforeEach(async () => {
       const maxTokens = BigNumber.from("50000000"); //5 * 10^7
@@ -451,7 +451,7 @@ describe("RamenSwapExchange", async () => {
       expect(tokensThatMustBeSold).to.be.eql(expectedTokensThatMustBeSold);
     });
   });
-  describe("ethToTokenSwapInput", ()=> {
+  describe("ethToTokenSwapInput", () => {
     beforeEach(async () => {
       const maxTokens = BigNumber.from("50000000"); //5 * 10^7
       const msgValue = BigNumber.from("1000000000"); //10 ^ 9
@@ -464,60 +464,88 @@ describe("RamenSwapExchange", async () => {
         msgValue
       );
     });
-    it("Should revert if its after deadline", async ()=> {
+    it("Should revert if its after deadline", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const invalidDeadline = currentTimestamp - 10;
       const minTokens = BigNumber.from("1");
       const msgValue = ethers.utils.parseEther("1");
 
-      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(minTokens, invalidDeadline, {value:msgValue});
+      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(
+        minTokens,
+        invalidDeadline,
+        { value: msgValue }
+      );
 
       await expect(tx).to.be.revertedWith("RamenSwap: Its after deadline");
-    })
-    
-    it("Should revert if msg value is equal to zero", async ()=> {
+    });
+
+    it("Should revert if msg value is equal to zero", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
       const minTokens = BigNumber.from("1");
       const invalidMsgValue = ethers.utils.parseEther("0");
 
-      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(minTokens, deadline, {value:invalidMsgValue});
+      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(
+        minTokens,
+        deadline,
+        { value: invalidMsgValue }
+      );
 
-      await expect(tx).to.be.revertedWith("msg value must be greater than zero");
-    })
-    it("Should revert if tokens to be received is less than min_tokens", async ()=> {
+      await expect(tx).to.be.revertedWith(
+        "msg value must be greater than zero"
+      );
+    });
+    it("Should revert if tokens to be received is less than min_tokens", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
       const invalidMinTokens = BigNumber.from("50000000");
       const msgValue = BigNumber.from("4000000000");
-      
-      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(invalidMinTokens, deadline, {value:msgValue});
 
-      await expect(tx).to.be.revertedWith("tokens to be received is less than min_tokens");
-    })
-    it("Should swap properly", async ()=> {
+      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(
+        invalidMinTokens,
+        deadline,
+        { value: msgValue }
+      );
+
+      await expect(tx).to.be.revertedWith(
+        "tokens to be received is less than min_tokens"
+      );
+    });
+    it("Should swap properly", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
       const minTokens = BigNumber.from("40000000");
       const msgValue = BigNumber.from("4000000000");
-      
-      const userEthBalanceBeforeSwap = await ethers.provider.getBalance(userA.address);
+
+      const userEthBalanceBeforeSwap = await ethers.provider.getBalance(
+        userA.address
+      );
       const userTokenBalanceBeforeSwap = await token.balanceOf(userA.address);
 
-      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(minTokens, deadline, {value:msgValue});
+      const tx = RamenSwapExchange.connect(userA).ethToTokenSwapInput(
+        minTokens,
+        deadline,
+        { value: msgValue }
+      );
 
       await expect(tx)
         .emit(RamenSwapExchange, "TokenPurchase")
-        .withArgs(userA.address, msgValue, minTokens)
+        .withArgs(userA.address, msgValue, minTokens);
 
-      const userEthBalanceAfterSwap = await ethers.provider.getBalance(userA.address);  
+      const userEthBalanceAfterSwap = await ethers.provider.getBalance(
+        userA.address
+      );
       const userTokenBalanceAfterSwap = await token.balanceOf(userA.address);
-    
-      expect(userEthBalanceAfterSwap.sub(userEthBalanceBeforeSwap.div(msgValue))).to.be.greaterThan(BigNumber.from("4000000000"));
-      expect(userTokenBalanceAfterSwap).to.be.eql(userTokenBalanceBeforeSwap.add(minTokens));
-    })
-  })
-  describe("tokenToEthSwapInput", async ()=> {
+
+      expect(
+        userEthBalanceAfterSwap.sub(userEthBalanceBeforeSwap.div(msgValue))
+      ).to.be.greaterThan(BigNumber.from("4000000000"));
+      expect(userTokenBalanceAfterSwap).to.be.eql(
+        userTokenBalanceBeforeSwap.add(minTokens)
+      );
+    });
+  });
+  describe("tokenToEthSwapInput", async () => {
     beforeEach(async () => {
       const maxTokens = BigNumber.from("50000000"); //5 * 10^7
       const msgValue = BigNumber.from("1000000000"); //10 ^ 9
@@ -530,52 +558,69 @@ describe("RamenSwapExchange", async () => {
         msgValue
       );
     });
-    it("Should revert if its after deadline", async ()=> {
+    it("Should revert if its after deadline", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const invalidDeadline = currentTimestamp - 10;
-      const tokenSold  = BigNumber.from("1");
+      const tokenSold = BigNumber.from("1");
       const minEth = BigNumber.from("1");
 
-      const tx = RamenSwapExchange.connect(userA).tokenToEthSwapInput(tokenSold, minEth, invalidDeadline);
+      const tx = RamenSwapExchange.connect(userA).tokenToEthSwapInput(
+        tokenSold,
+        minEth,
+        invalidDeadline
+      );
 
       await expect(tx).to.be.revertedWith("RamenSwap: Its after deadline");
-    })
-    it("Should revert if tokenSold is equal to zero", async ()=> {
+    });
+    it("Should revert if tokenSold is equal to zero", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
-      const invalidTokenSold  = BigNumber.from("0");
+      const invalidTokenSold = BigNumber.from("0");
       const minEth = BigNumber.from("1");
 
-      const tx = RamenSwapExchange.connect(userA).tokenToEthSwapInput(invalidTokenSold, minEth, deadline);
+      const tx = RamenSwapExchange.connect(userA).tokenToEthSwapInput(
+        invalidTokenSold,
+        minEth,
+        deadline
+      );
 
-      await expect(tx).to.be.revertedWith("tokenSold must be greater than zero");
-    })
-    it("Should revert if eth to be received is less than min_eth", async ()=> {
+      await expect(tx).to.be.revertedWith(
+        "tokenSold must be greater than zero"
+      );
+    });
+    it("Should revert if eth to be received is less than min_eth", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
-      const tokenSold  = BigNumber.from("50000000");//10^7
-      const invalidMinEth = BigNumber.from("1000000000");//10^9
+      const tokenSold = BigNumber.from("50000000"); //10^7
+      const invalidMinEth = BigNumber.from("1000000000"); //10^9
 
-      const tx = RamenSwapExchange.tokenToEthSwapInput(tokenSold, invalidMinEth,deadline);
+      const tx = RamenSwapExchange.tokenToEthSwapInput(
+        tokenSold,
+        invalidMinEth,
+        deadline
+      );
 
-      await expect(tx).to.be.revertedWith("eth to be received is less than min_eth");
-    })
-    it("Should swap properly", async ()=> {
+      await expect(tx).to.be.revertedWith(
+        "eth to be received is less than min_eth"
+      );
+    });
+    it("Should swap properly", async () => {
       const currentTimestamp = await latestBlockTimestamp();
       const deadline = currentTimestamp + 100;
-      const tokenSold  = BigNumber.from("50000000");//10^7
-      const minEth = BigNumber.from("500000000");//10^9
+      const tokenSold = BigNumber.from("50000000"); //10^7
+      const minEth = BigNumber.from("500000000"); //10^9
 
-      await token
-        .connect(userA)
-        .approve(RamenSwapExchange.address, tokenSold);
+      await token.connect(userA).approve(RamenSwapExchange.address, tokenSold);
 
-      const tx = RamenSwapExchange.tokenToEthSwapInput(tokenSold, minEth, deadline);
+      const tx = RamenSwapExchange.tokenToEthSwapInput(
+        tokenSold,
+        minEth,
+        deadline
+      );
 
       await expect(tx)
-              .emit(RamenSwapExchange,"EthPurchase")
-              .withArgs(userA.address, tokenSold, minEth)
-    })
-  })
-
+        .emit(RamenSwapExchange, "EthPurchase")
+        .withArgs(userA.address, tokenSold, minEth);
+    });
+  });
 });
