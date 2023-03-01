@@ -19,7 +19,7 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
     event AddLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
     event RemoveLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
 
-    //@TODO change to Proxy pattern
+    //@TODO change to Proxy  pattern
     constructor(address _token) ERC20("RamenToken","RAMEN"){
         token = ERC20(_token);
         factory = IRamenSwapFactory(msg.sender);
