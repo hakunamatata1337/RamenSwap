@@ -8,6 +8,7 @@ import "./interfaces/IRamenSwapFactory.sol";
 
 
 contract RamenSwapExchange is ERC20, ERC20Burnable{
+    
     using SafeERC20 for ERC20;
 
     IRamenSwapFactory public immutable factory;
