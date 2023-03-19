@@ -1,5 +1,25 @@
 [
   {
+    "inputs": [],
+    "name": "AfterDeadline",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EthNotProvided",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotEnoughEthProvided",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotEnoughTokensToBeReceived",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {

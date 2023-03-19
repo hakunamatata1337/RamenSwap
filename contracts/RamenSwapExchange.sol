@@ -6,6 +6,16 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IRamenSwapFactory.sol";
 
+error AfterDeadline();
+
+error EthNotProvided();
+
+///@dev This error is fired when minimum amount of tokens that user wants to receive is bigger than amount of tokens user will receive  
+error NotEnoughTokensToBeReceived();
+
+///@dev This error is fired when user did not provided enought eth to perform operation
+error NotEnoughEthProvided();
+
 //@Todo use custom errors
 contract RamenSwapExchange is ERC20Upgradeable{
     using SafeERC20 for ERC20;
@@ -30,8 +40,12 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@param maxTokens max amount of tokens that user is willing to deposit to the pool
     ///@param deadline time after which transaction is invalid 
     function addLiquidity(uint minLiquidity, uint maxTokens, uint deadline) external payable returns(uint256) {
-            require(deadline > block.timestamp, "RamenSwap: Its after deadline");
-            require( msg.value > 0 , "RamenSwap: msg value should be greater than zero");
+            if(deadline <= block.timestamp) {
+                revert AfterDeadline();
+            }
+            if(msg.value == 0) {
+                revert EthNotProvided();
+            }
             require(maxTokens > 0, "RamenSwap: max tokens should be greater than zero");
             uint totalLiquidity= totalSupply();
             if(totalLiquidity != 0) {
@@ -62,7 +76,9 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@param min_tokens minimum amount of tokens user wants to receive
     ///@param deadline time after which transaction is invalid
     function removeLiquidity(uint amount,uint min_eth,uint min_tokens,uint deadline) external returns (uint256, uint256) {
-        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        if(deadline <= block.timestamp) {
+                revert AfterDeadline();
+        }
         require(amount > 0, "RamenSwap: amount must be greater than zero");
         require(min_eth > 0 && min_tokens > 0, "min_eth and min_token should be greater than zero");
         uint totalLiquidity = totalSupply();
@@ -82,25 +98,35 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@param min_tokens minimum amount of tokens that user wants to receive
     ///@param deadline time after which transaction is invalid
     function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256) {
-        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
-         require(msg.value != 0, "msg value must be greater than zero");
+        if(deadline <= block.timestamp) {
+            revert AfterDeadline();
+        }
+        if(msg.value == 0) {
+            revert EthNotProvided();
+        }
         uint256 tokensToBeReceived = _getInputPrice(msg.value, address(this).balance - msg.value, token.balanceOf(address(this)));
-        require(tokensToBeReceived >= min_tokens, "tokens to be received is less than min_tokens");
+        if(tokensToBeReceived < min_tokens){
+            revert NotEnoughTokensToBeReceived();
+        }
         token.safeTransfer( msg.sender, tokensToBeReceived);
         emit TokenPurchase(msg.sender, msg.value, tokensToBeReceived);
         return tokensToBeReceived;
     } 
 
-    ///@dev function to swap ethereum for specified amount of tokens
+    ///@dev function to swap ethereum for specified amount of tokens 
     ///@param tokensBought amount of tokens user wants to buy
     ///@param deadline time after which transaction is invalid
     function ethToTokenSwapOutput(uint tokensBought, uint deadline) external payable returns (uint256) {
-        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        if(deadline <= block.timestamp) {
+                revert AfterDeadline();
+        }
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
         uint ethToProvide = _getOutputPrice(tokensBought, tokenAmount, ethAmount - msg.value);
-        require(ethToProvide >= msg.value , "user did not provide enough eth");
-        uint refund = ethToProvide - msg.value;
+        if(ethToProvide > msg.value) {
+            revert NotEnoughEthProvided();
+        }
+        uint refund = msg.value - ethToProvide;
         if(refund > 0) {
             payable(msg.sender).transfer(refund);
         }
@@ -115,7 +141,9 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@param min_eth minimum amount of eth that user wants to receive
     ///@param deadline time after which transaction is invalid
     function tokenToEthSwapInput(uint256 tokenSold, uint256 min_eth, uint256 deadline) external  returns (uint256) {
-        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        if(deadline <= block.timestamp) {
+                revert AfterDeadline();
+        }
         require(tokenSold != 0, "tokenSold must be greater than zero");
         uint ethToBeReceived = _getInputPrice(tokenSold, token.balanceOf(address(this)), address(this).balance);
         require(ethToBeReceived >= min_eth, "eth to be received is less than min_eth");
@@ -130,7 +158,9 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@param maxTokens maximum amount of tokens user wants to sell
     ///@param deadline time after which transaction is invalid
     function tokenToEthSwapOutput(uint ethBought,uint maxTokens, uint deadline) external payable returns (uint256) {
-        require(deadline > block.timestamp, "RamenSwap: Its after deadline");
+        if(deadline <= block.timestamp) {
+                revert AfterDeadline();
+        }
         uint ethAmount = address(this).balance;
         uint tokenAmount = token.balanceOf(address(this));
         uint tokensToProvide = _getOutputPrice(ethBought, ethAmount, tokenAmount);
@@ -170,7 +200,7 @@ contract RamenSwapExchange is ERC20Upgradeable{
     ///@dev function computes how much ethereum can be bought by selling tokenSold amount of tokens
     ///@param tokenSold amount of tokens to be sold
     ///@return amount of eth to be received 
-     function getTokenToEthInputPrice(uint tokenSold) view external returns(uint256){
+    function getTokenToEthInputPrice(uint tokenSold) view external returns(uint256){
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
         require(tokenSold != 0, "tokenSold should be greater than zero");

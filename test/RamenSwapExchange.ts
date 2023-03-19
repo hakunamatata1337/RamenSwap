@@ -55,7 +55,10 @@ describe("RamenSwapExchange", async () => {
         invalidDeadline
       );
 
-      expect(tx).to.be.revertedWith("RamenSwap: Its after deadline");
+      expect(tx).to.be.revertedWithCustomError(
+        RamenSwapExchange,
+        "AfterDeadline"
+      );
     });
     it("Should revert if msg value is equal to zero", async () => {
       const currentTimestamp = await latestBlockTimestamp();
@@ -476,7 +479,10 @@ describe("RamenSwapExchange", async () => {
         { value: msgValue }
       );
 
-      await expect(tx).to.be.revertedWith("RamenSwap: Its after deadline");
+      expect(tx).to.be.revertedWithCustomError(
+        RamenSwapExchange,
+        "AfterDeadline"
+      );
     });
 
     it("Should revert if msg value is equal to zero", async () => {
@@ -491,8 +497,9 @@ describe("RamenSwapExchange", async () => {
         { value: invalidMsgValue }
       );
 
-      await expect(tx).to.be.revertedWith(
-        "msg value must be greater than zero"
+      await expect(tx).to.be.revertedWithCustomError(
+        RamenSwapExchange,
+        "EthNotProvided"
       );
     });
     it("Should revert if tokens to be received is less than min_tokens", async () => {
@@ -507,8 +514,9 @@ describe("RamenSwapExchange", async () => {
         { value: msgValue }
       );
 
-      await expect(tx).to.be.revertedWith(
-        "tokens to be received is less than min_tokens"
+      await expect(tx).to.be.revertedWithCustomError(
+        RamenSwapExchange,
+        "NotEnoughTokensToBeReceived"
       );
     });
     it("Should swap properly", async () => {
@@ -570,7 +578,10 @@ describe("RamenSwapExchange", async () => {
         invalidDeadline
       );
 
-      await expect(tx).to.be.revertedWith("RamenSwap: Its after deadline");
+      expect(tx).to.be.revertedWithCustomError(
+        RamenSwapExchange,
+        "AfterDeadline"
+      );
     });
     it("Should revert if tokenSold is equal to zero", async () => {
       const currentTimestamp = await latestBlockTimestamp();
