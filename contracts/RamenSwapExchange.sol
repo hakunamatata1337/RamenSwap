@@ -1,18 +1,17 @@
 pragma solidity 0.8.13;
 
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interfaces/IRamenSwapFactory.sol";
 
-
-contract RamenSwapExchange is ERC20, ERC20Burnable{
-    
+//@Todo use custom errors
+contract RamenSwapExchange is ERC20Upgradeable{
     using SafeERC20 for ERC20;
 
-    IRamenSwapFactory public immutable factory;
-    ERC20 public immutable token;
+    IRamenSwapFactory public factory;
+    ERC20 public token;
     
 
     event TokenPurchase(address indexed buyer, uint256 indexed eth_sold, uint256 indexed tokens_bought);
@@ -20,9 +19,8 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
     event AddLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
     event RemoveLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
 
-    //@TODO use custom errors
-    //@TODO change to Proxy  pattern
-    constructor(address _token) ERC20("RamenToken","RAMEN"){
+    function initialize(address _token) public initializer {
+        __ERC20_init("RamenToken", "RAMEN");
         token = ERC20(_token);
         factory = IRamenSwapFactory(msg.sender);
     }
@@ -58,6 +56,11 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
                 return initialLiquidity;
             }
     }
+    ///@dev function used to remove liquidity from the pool
+    ///@param amount amount of liquidity that user wants to burn
+    ///@param min_eth minimum amount of eth user wants to receive
+    ///@param min_tokens minimum amount of tokens user wants to receive
+    ///@param deadline time after which transaction is invalid
     function removeLiquidity(uint amount,uint min_eth,uint min_tokens,uint deadline) external returns (uint256, uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
         require(amount > 0, "RamenSwap: amount must be greater than zero");
@@ -67,7 +70,7 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         uint ethAmount = amount * address(this).balance / totalLiquidity;
         uint tokenAmount = amount * token.balanceOf(address(this)) / totalLiquidity;
         require(min_eth <= ethAmount && min_tokens <= tokenAmount, "not enough tokens or eth withdrawn");
-        burn(amount);
+        _burn(msg.sender, amount);
         token.safeTransferFrom(address(this), msg.sender, tokenAmount);
         payable(msg.sender).transfer(ethAmount);
         emit RemoveLiquidity(msg.sender, ethAmount, tokenAmount);
@@ -75,7 +78,9 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
     }
 
     
-
+    ///@dev function to swap provided ethereum for tokens
+    ///@param min_tokens minimum amount of tokens that user wants to receive
+    ///@param deadline time after which transaction is invalid
     function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
          require(msg.value != 0, "msg value must be greater than zero");
@@ -86,6 +91,9 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return tokensToBeReceived;
     } 
 
+    ///@dev function to swap ethereum for specified amount of tokens
+    ///@param tokensBought amount of tokens user wants to buy
+    ///@param deadline time after which transaction is invalid
     function ethToTokenSwapOutput(uint tokensBought, uint deadline) external payable returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
         uint tokenAmount = token.balanceOf(address(this));
@@ -101,6 +109,11 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return ethToProvide;
     }
 
+    
+    ///@dev function to swap provided tokens for ethereum
+    ///@param tokenSold amount of tokens user is selling for ethereum
+    ///@param min_eth minimum amount of eth that user wants to receive
+    ///@param deadline time after which transaction is invalid
     function tokenToEthSwapInput(uint256 tokenSold, uint256 min_eth, uint256 deadline) external  returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
         require(tokenSold != 0, "tokenSold must be greater than zero");
@@ -112,6 +125,10 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return ethToBeReceived;
     } 
 
+    ///@dev function to swap  tokens for specified amount of ethereum
+    ///@param ethBought amount of ethereum user wants to buy
+    ///@param maxTokens maximum amount of tokens user wants to sell
+    ///@param deadline time after which transaction is invalid
     function tokenToEthSwapOutput(uint ethBought,uint maxTokens, uint deadline) external payable returns (uint256) {
         require(deadline > block.timestamp, "RamenSwap: Its after deadline");
         uint ethAmount = address(this).balance;
@@ -150,7 +167,9 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
     }
 
  
-
+    ///@dev function computes how much ethereum can be bought by selling tokenSold amount of tokens
+    ///@param tokenSold amount of tokens to be sold
+    ///@return amount of eth to be received 
      function getTokenToEthInputPrice(uint tokenSold) view external returns(uint256){
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
@@ -158,6 +177,9 @@ contract RamenSwapExchange is ERC20, ERC20Burnable{
         return _getInputPrice(tokenSold, tokenAmount, ethAmount);
     }
 
+    ///@dev function computes how much tokens user has to deposit to get ethBought amount of ethereum
+    ///@param ethBought amount of ethereum user wants to buy
+    ///@return amount of tokens user has to deposit 
     function getTokenToEthOutputPrice(uint ethBought) view external returns(uint256){
         uint tokenAmount = token.balanceOf(address(this));
         uint ethAmount = address(this).balance;
